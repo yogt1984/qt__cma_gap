@@ -140,9 +140,6 @@ def find_gap_closures(
     
     gaps_df = gaps_df.copy()
     gaps_df['is_closed'] = False
-    gaps_df['closure_time'] = pd.NaT
-    gaps_df['hours_to_close'] = np.nan
-    gaps_df['days_to_close'] = np.nan
     
     # Ensure df timestamps are timezone-aware
     if df['timestamp'].dt.tz is None:
@@ -151,6 +148,25 @@ def find_gap_closures(
     else:
         df_work = df.copy()
         df_work['timestamp'] = df_work['timestamp'].dt.tz_convert('UTC')
+    
+    # Ensure gaps_df timestamps are timezone-aware and in UTC
+    if gaps_df['gap_start'].dt.tz is None:
+        gaps_df['gap_start'] = gaps_df['gap_start'].dt.tz_localize('UTC')
+        gaps_df['gap_end'] = gaps_df['gap_end'].dt.tz_localize('UTC')
+    else:
+        gaps_df['gap_start'] = gaps_df['gap_start'].dt.tz_convert('UTC')
+        gaps_df['gap_end'] = gaps_df['gap_end'].dt.tz_convert('UTC')
+    
+    # Initialize closure_time with proper timezone-aware dtype
+    # Use the same dtype as gap_start to avoid dtype conflicts
+    gaps_df['closure_time'] = pd.Series(
+        [pd.NaT] * len(gaps_df),
+        index=gaps_df.index,
+        dtype=gaps_df['gap_start'].dtype
+    )
+    
+    gaps_df['hours_to_close'] = np.nan
+    gaps_df['days_to_close'] = np.nan
     
     df_work = df_work.sort_values('timestamp').reset_index(drop=True)
     
@@ -179,10 +195,17 @@ def find_gap_closures(
         
         if not closed_candles.empty:
             closure_time = closed_candles.iloc[0]['timestamp']
+            # Ensure closure_time is timezone-aware and in UTC (matching gap_start dtype)
+            if closure_time.tz is None:
+                closure_time = closure_time.tz_localize('UTC')
+            else:
+                closure_time = closure_time.tz_convert('UTC')
+            
             time_diff = closure_time - gap_end_time
             
             gaps_df.at[idx, 'is_closed'] = True
-            gaps_df.at[idx, 'closure_time'] = closure_time
+            # Use loc instead of at for better dtype handling
+            gaps_df.loc[idx, 'closure_time'] = closure_time
             gaps_df.at[idx, 'hours_to_close'] = time_diff.total_seconds() / 3600
             gaps_df.at[idx, 'days_to_close'] = time_diff.total_seconds() / 86400
     
