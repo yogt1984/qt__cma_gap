@@ -32,6 +32,9 @@ def calculate_gap_statistics(gaps_df: pd.DataFrame) -> Dict:
         - down_gaps: Number of downward gaps
         - up_gap_closure_rate: Closure rate for upward gaps
         - down_gap_closure_rate: Closure rate for downward gaps
+        - gaps_closed_in_one_week: Number of gaps closed within 7 days
+        - gaps_closed_in_one_week_pct: Percentage of all gaps closed within one week
+        - gaps_closed_in_one_week_of_closed_pct: Percentage of closed gaps that closed within one week
     """
     if gaps_df.empty:
         return {
@@ -104,6 +107,17 @@ def calculate_gap_statistics(gaps_df: pd.DataFrame) -> Dict:
     stats['avg_up_gap_size'] = up_gaps['gap_size'].mean() if len(up_gaps) > 0 else 0
     stats['avg_down_gap_size'] = down_gaps['gap_size'].mean() if len(down_gaps) > 0 else 0
     
+    # Gaps closed within one week (7 days)
+    if not closed_gaps.empty:
+        gaps_closed_in_week = closed_gaps[closed_gaps['days_to_close'] <= 7]
+        stats['gaps_closed_in_one_week'] = len(gaps_closed_in_week)
+        stats['gaps_closed_in_one_week_pct'] = (len(gaps_closed_in_week) / stats['total_gaps'] * 100) if stats['total_gaps'] > 0 else 0
+        stats['gaps_closed_in_one_week_of_closed_pct'] = (len(gaps_closed_in_week) / stats['closed_gaps'] * 100) if stats['closed_gaps'] > 0 else 0
+    else:
+        stats['gaps_closed_in_one_week'] = 0
+        stats['gaps_closed_in_one_week_pct'] = 0
+        stats['gaps_closed_in_one_week_of_closed_pct'] = 0
+    
     return stats
 
 
@@ -148,6 +162,11 @@ def print_statistics(stats: Dict) -> None:
     print(f"  - Downward Gaps: {stats['down_gaps']} (Closure Rate: {stats['down_gap_closure_rate']:.2f}%)")
     print(f"  - Avg Up Gap Size: ${stats['avg_up_gap_size']:,.2f}")
     print(f"  - Avg Down Gap Size: ${stats['avg_down_gap_size']:,.2f}")
+    
+    print(f"\nGaps Closed Within One Week:")
+    print(f"  - Count: {stats['gaps_closed_in_one_week']} ({stats['gaps_closed_in_one_week_pct']:.2f}% of all gaps)")
+    if stats['closed_gaps'] > 0:
+        print(f"  - Percentage of closed gaps: {stats['gaps_closed_in_one_week_of_closed_pct']:.2f}%")
     
     print("="*60 + "\n")
 
