@@ -1,4 +1,4 @@
-.PHONY: help install test run clean notebook
+.PHONY: help install test run report clean notebook
 
 # Default target
 help:
@@ -6,6 +6,7 @@ help:
 	@echo "  make install    - Install dependencies"
 	@echo "  make test       - Run all tests"
 	@echo "  make run        - Run the main analysis script"
+	@echo "  make report     - Generate detailed unclosed gaps report"
 	@echo "  make notebook   - Launch Jupyter notebook"
 	@echo "  make clean      - Clean output files and cache"
 
@@ -20,6 +21,10 @@ test:
 # Run the main script
 run:
 	PYTHONPATH=src python -m cme_gap_analyzer.main
+
+# Generate unclosed gaps report
+report:
+	PYTHONPATH=src python -m cme_gap_analyzer.report --save-csv
 
 # Launch Jupyter notebook
 notebook:
