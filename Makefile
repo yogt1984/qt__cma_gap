@@ -24,7 +24,10 @@ run:
 
 # Generate unclosed gaps report
 report:
+	@echo "Generating unclosed CME gaps report..."
+	@mkdir -p output
 	PYTHONPATH=src python -m cme_gap_analyzer.report --save-csv
+	@echo "Report generation complete! Check the output/ directory for results."
 
 # Launch Jupyter notebook
 notebook:
