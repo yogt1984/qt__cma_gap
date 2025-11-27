@@ -43,13 +43,30 @@ def calculate_unclosed_gap_statistics(gaps_df: pd.DataFrame, df: pd.DataFrame) -
     current_price = df['close'].iloc[-1]
     last_timestamp = df['timestamp'].iloc[-1]
     
+    # Ensure last_timestamp is timezone-aware (convert to UTC)
+    if isinstance(last_timestamp, pd.Timestamp):
+        if last_timestamp.tz is None:
+            last_timestamp = last_timestamp.tz_localize('UTC')
+        else:
+            last_timestamp = last_timestamp.tz_convert('UTC')
+    else:
+        last_timestamp = pd.Timestamp(last_timestamp)
+        if last_timestamp.tz is None:
+            last_timestamp = last_timestamp.tz_localize('UTC')
+    
     stats = {}
     stats['total_unclosed'] = len(unclosed_gaps)
     stats['current_price'] = current_price
     stats['last_timestamp'] = last_timestamp
     
-    # Calculate days since gap creation
+    # Ensure gap_end timestamps are timezone-aware and in UTC
     unclosed_gaps = unclosed_gaps.copy()
+    if unclosed_gaps['gap_end'].dt.tz is None:
+        unclosed_gaps['gap_end'] = unclosed_gaps['gap_end'].dt.tz_localize('UTC')
+    else:
+        unclosed_gaps['gap_end'] = unclosed_gaps['gap_end'].dt.tz_convert('UTC')
+    
+    # Calculate days since gap creation (both timestamps are now UTC timezone-aware)
     unclosed_gaps['days_since_gap'] = (last_timestamp - unclosed_gaps['gap_end']).dt.total_seconds() / 86400
     
     # Gap size statistics for unclosed gaps
